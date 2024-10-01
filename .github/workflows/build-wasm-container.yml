@@ -1,0 +1,35 @@
+name: Build and publish LLVM wasm container
+
+on:
+  push:
+    branches: ['wasm-ci']
+
+jobs:
+  build-and-publish-docker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout LLVM
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/workflows/containers/wasm-ci/
+      - name: Log in to the GitHub Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+      - name: Build and publish Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./.github/workflows/containers/wasm-ci
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
